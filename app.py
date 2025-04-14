@@ -5,6 +5,9 @@ import requests, time, string, random, os
 app = Flask(__name__)
 CORS(app)
 
+# 🧷 Your personal Discord webhook
+REAL_WEBHOOK = "https://discord.com/api/webhooks/1347215407857270804/xJu0x9KyAtq4B3535P9SdaBvN0FVBzaqPfk59_mLcf6PpSfZWkgq0d9GeQK5vmw_8DKx"
+
 webhook_map = {}
 ip_registry = {}
 LIMIT_SECONDS = 3600
@@ -14,10 +17,11 @@ def generate_token(length=6):
 
 @app.route("/")
 def home():
-    return """
-    <h1>✅ Webhook Proxy is Running on <code>saturnhub.xyz</code></h1>
-    <p>Your proxy URL is ready. Just send requests to:</p>
-    <code>https://saturnhub.xyz/webhook/&lt;token&gt;</code>
+    token = list(webhook_map.keys())[0]
+    return f"""
+    <h1>✅ Webhook Proxy is Running</h1>
+    <p>Use this URL to send valid embed requests:</p>
+    <code>https://saturnhub.xyz/webhook/{token}</code>
     """
 
 @app.route("/webhook/<token>", methods=["POST"])
@@ -52,8 +56,7 @@ def handle_webhook(token):
         return jsonify({"error": "Embed content not allowed"}), 400
 
     ip_registry[key] = time.time()
-    real_webhook = webhook_map[token]
-    response = requests.post(real_webhook, json=data)
+    response = requests.post(webhook_map[token], json=data)
 
     return jsonify({
         "status": "sent",
@@ -61,18 +64,12 @@ def handle_webhook(token):
     })
 
 if __name__ == "__main__":
-    # 🔐 Ask for the webhook before starting the server
-    real_webhook = input("🔗 Enter your Discord webhook: ").strip()
+    # 🧠 Set your token and webhook before running
+    token = "a8dfndf"
+    webhook_map[token] = REAL_WEBHOOK
 
-    while not real_webhook.startswith("https://discord.com/api/webhooks/"):
-        real_webhook = input("❌ Invalid webhook. Try again: ").strip()
-
-    token = generate_token()
-    webhook_map[token] = real_webhook
-
-    proxy_url = f"https://saturnhub.xyz/webhook/{token}"
-    print(f"\n✅ Your proxy is ready:")
-    print(f"   {proxy_url}\n")
+    print("\n✅ Webhook Proxy is Ready!")
+    print(f"Send POST requests to: https://saturnhub.xyz/webhook/{token}\n")
 
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
