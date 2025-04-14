@@ -12,6 +12,16 @@ LIMIT_SECONDS = 3600
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
+@app.route("/")
+def home():
+    return """
+    <h1>✅ Webhook Proxy is Running</h1>
+    <p>Use the <code>/create</code> endpoint to generate a proxy webhook.</p>
+    <p><b>POST</b> your real Discord webhook to <code>/create</code> using JSON:<br>
+    <code>{ "real_webhook": "https://discord.com/api/webhooks/..." }</code></p>
+    <p>Then use the returned <code>/webhook/&lt;token&gt;</code> URL to send messages!</p>
+    """
+
 @app.route("/create", methods=["POST"])
 def create_webhook():
     data = request.json
