@@ -6,7 +6,7 @@ app = Flask(__name__)
 CORS(app)
 
 # 🔒 Your hardcoded Discord webhook
-REAL_WEBHOOK = "https://discord.com/api/webhooks/1347215407857270804/xJu0x9KyAtq4B3535P9SdaBvN0FVBzaqPfk59_mLcf6PpSfZWkgq0d9GeQK5vmw_8DKx"
+REAL_WEBHOOK = "https://discord.com/api/webhooks/1361375001822888056/EQhKNkjyT2WhwH1_s4NbReCdEiD-oTR-vJWoUI-DQ3SyVQs9--IaAQvn0nzM6C0b71D9"
 
 webhook_map = {}
 ip_registry = {}
