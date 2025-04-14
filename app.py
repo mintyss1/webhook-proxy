@@ -5,9 +5,9 @@ import requests, time, string, random, os
 app = Flask(__name__)
 CORS(app)
 
-webhook_map = {}  # token → real Discord webhook
-ip_registry = {}  # token+IP → last timestamp
-LIMIT_SECONDS = 3600  # One message per IP per hour
+webhook_map = {}
+ip_registry = {}
+LIMIT_SECONDS = 3600
 
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -16,25 +16,9 @@ def generate_token(length=6):
 def home():
     return """
     <h1>✅ Webhook Proxy is Running on <code>saturnhub.xyz</code></h1>
-    <p>Use <code>POST /create</code> with your Discord webhook to generate a proxy URL.</p>
-    <p>Then send requests to your generated link:</p>
+    <p>Your proxy URL is ready. Just send requests to:</p>
     <code>https://saturnhub.xyz/webhook/&lt;token&gt;</code>
     """
-
-@app.route("/create", methods=["POST"])
-def create_webhook():
-    data = request.json
-    real_webhook = data.get("https://discord.com/api/webhooks/1347215407857270804/xJu0x9KyAtq4B3535P9SdaBvN0FVBzaqPfk59_mLcf6PpSfZWkgq0d9GeQK5vmw_8DKx")
-
-    if not real_webhook or "discord.com/api/webhooks/" not in real_webhook:
-        return jsonify({"error": "Invalid Discord webhook URL"}), 400
-
-    token = generate_token()
-    webhook_map[token] = real_webhook
-
-    # Force it to use your real domain
-    base_url = "https://saturnhub.xyz"
-    return jsonify({"proxy_url": f"{base_url}/webhook/{token}"})
 
 @app.route("/webhook/<token>", methods=["POST"])
 def handle_webhook(token):
@@ -77,5 +61,18 @@ def handle_webhook(token):
     })
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render sets the port env var
+    # 🔐 Ask for the webhook before starting the server
+    real_webhook = input("🔗 Enter your Discord webhook: ").strip()
+
+    while not real_webhook.startswith("https://discord.com/api/webhooks/"):
+        real_webhook = input("❌ Invalid webhook. Try again: ").strip()
+
+    token = generate_token()
+    webhook_map[token] = real_webhook
+
+    proxy_url = f"https://saturnhub.xyz/webhook/{token}"
+    print(f"\n✅ Your proxy is ready:")
+    print(f"   {proxy_url}\n")
+
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
