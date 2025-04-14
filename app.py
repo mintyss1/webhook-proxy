@@ -10,7 +10,7 @@ REAL_WEBHOOK = "https://discord.com/api/webhooks/1347215407857270804/xJu0x9KyAtq
 
 webhook_map = {}
 ip_registry = {}
-LIMIT_SECONDS = 3600  # 1 message per IP per hour
+LIMIT_SECONDS = 40  # 1 message per IP per hour
 
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
