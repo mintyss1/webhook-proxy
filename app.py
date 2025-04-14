@@ -17,25 +17,31 @@ def generate_token(length=6):
 
 @app.route("/")
 def home():
-    return "", 204  # Show absolutely nothing (No Content)
+    return "", 204  # Show absolutely nothing
 
 @app.route("/webhook/<token>", methods=["POST"])
 def handle_webhook(token):
     if token not in webhook_map:
-        return "", 204  # Silent ignore if token is invalid
+        return "", 204  # Ignore invalid token
 
-    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    # ✅ Properly indented IP fetch logic
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        client_ip = request.remote_addr
+
     key = f"{token}:{client_ip}"
 
-    # ⛔ Enforce 1 message per IP
+    # 🛑 Only allow 1 request per IP
     if key in ip_registry:
-        return "", 204  # Silent ignore if IP already sent
+        return "", 204
 
     data = request.json
     if not data or "embeds" not in data:
-        return "", 204  # Silent ignore if no embeds
+        return "", 204
 
-    # ✅ Validate the embed is "close enough"
+    # ✅ Check embed content
     allowed = False
     for embed in data["embeds"]:
         title = embed.get("title", "")
@@ -56,9 +62,8 @@ def handle_webhook(token):
                     break
 
     if not allowed:
-        return "", 204  # Silent ignore if content doesn't match
+        return "", 204
 
-    # ✅ All checks passed, send
     ip_registry[key] = time.time()
     response = requests.post(webhook_map[token], json=data)
     return jsonify({
@@ -67,7 +72,7 @@ def handle_webhook(token):
     })
 
 if __name__ == "__main__":
-    token = "a8dfndf"  # Static token, or use generate_token()
+    token = "a8dfndf"
     webhook_map[token] = REAL_WEBHOOK
 
     print("\n✅ Webhook Proxy is Ready!")
