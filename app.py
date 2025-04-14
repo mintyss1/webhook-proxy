@@ -10,21 +10,21 @@ REAL_WEBHOOK = "https://discord.com/api/webhooks/1347215407857270804/xJu0x9KyAtq
 
 webhook_map = {}
 ip_registry = {}
-LIMIT_SECONDS = 40  # 1 message per IP per 40 seconds
+LIMIT_SECONDS = 40  # Cooldown per IP
 
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 @app.route("/")
 def home():
-    return "", 204  # Show absolutely nothing
+    return "", 204  # Empty homepage
 
 @app.route("/webhook/<token>", methods=["POST"])
 def handle_webhook(token):
     if token not in webhook_map:
-        return "", 204  # Ignore invalid token
+        return "", 204  # Invalid token
 
-    # ✅ Get real IP
+    # Get real client IP
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
         client_ip = forwarded_for.split(",")[0].strip()
@@ -33,7 +33,7 @@ def handle_webhook(token):
 
     key = f"{token}:{client_ip}"
 
-    # ⛔ Cooldown check
+    # IP Cooldown Check
     if key in ip_registry and time.time() - ip_registry[key] < LIMIT_SECONDS:
         return "", 204
 
@@ -41,7 +41,7 @@ def handle_webhook(token):
     if not data or "embeds" not in data:
         return "", 204
 
-    # ✅ Validate embed structure
+    # Validate Embed Content
     allowed = False
     for embed in data["embeds"]:
         title = embed.get("title", "")
@@ -64,13 +64,17 @@ def handle_webhook(token):
     if not allowed:
         return "", 204
 
-    # ✅ Send message + store timestamp
     ip_registry[key] = time.time()
     response = requests.post(webhook_map[token], json=data)
     return jsonify({
         "status": "sent",
         "discord_status": response.status_code
     })
+
+# 🔐 Block all other HTTP methods for /webhook/<token>
+@app.route("/webhook/<token>", methods=["GET", "DELETE", "PUT", "PATCH", "OPTIONS"])
+def block_other_methods(token):
+    return "", 405  # Method Not Allowed
 
 if __name__ == "__main__":
     token = "a8dfndf"
