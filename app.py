@@ -70,7 +70,7 @@ def handle_webhook(token):
     })
 
 # 🔐 Block all other HTTP methods for /webhook/<token>
-@app.route("/webhook/<token>", methods=["GET", "DELETE", "PUT", "PATCH", "OPTIONS"])
+@app.route("/webhook/<token>", methods=["DELETE", "PUT", "PATCH", "OPTIONS"])
 def block_other_methods(token):
     return "", 405  # Method Not Allowed
 
